@@ -14,7 +14,7 @@ SA-1 Plus merges 3 previously incompatible patches and implements a couple new o
   - Dialog boxes open, close and scroll faster
   - Skips the boss intro by pressing START
 
-Apply "sa-1_plus.ips" to your 1.0 ROM.
+Apply "sa-1_plus.ips" to your 1.0 USA ROM.
 
 https://github.com/llethas/mmx_sa-1_plus - SA-1 Plus Github
 https://www.romhacking.net/hacks/5145/ --- Original SA-1 chip patch by Bosn

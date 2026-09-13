@@ -39,9 +39,17 @@
 ;      a gate that only proceeds when I-RAM $3348 or $3208 is non-zero.
 ;      Neither flag is ever set by the game, so the double-tap detector
 ;      (still intact at $819723-$819756) was unreachable.
-;    - This patch adds the new option flag as a third OR-condition on
-;      that gate. When the option is ON the detector runs normally;
-;      when OFF the gate returns early and double-tap dash is disabled.
+;    - When the option is ON the detector runs normally (ground dash
+;      via the original $81975A tail); when OFF the gate returns early
+;      and double-tap dash is disabled.
+;    - Midair double-tap, with the option ON and Leg Parts equipped,
+;      now starts an Air Dash (state $48) instead of being rejected.
+;      This is the Mega Man X2 behaviour:
+;        1. Run the ground-dash QuickGate (states $00/$02/$04/$0A).
+;        2. If that fails, and the Air Dash patch is present, run the
+;           Air-Dash StateGate (Leg Parts + state $06/$08).
+;        3. On success, face the tapped direction and enter state $48.
+;      Ground double-tap is unchanged (still commits via $81975A).
 ;
 ;  FREE SPACE
 ;    - Bank $86 ($86FB80+) -- new message data and the relocated 11-entry
@@ -267,9 +275,8 @@ SelectPassNew:
 
 ; ----------------------------------------------------------------------------
 ; Initial screen-open draw loop (original was the 13-byte inline loop
-; at $80EAEF). Draws all 11 rows except index 6, which is handled by
-; DTapInitHook so a placeholder icon is never written into the sprite
-; character budget.
+; at $80EAEF). Draws the existing menu rows; index 6 is drawn by
+; DTapInitHook as the D-TAP DASH row.
 ; ----------------------------------------------------------------------------
 NewInitLoop:
         LDX #$0A
@@ -286,15 +293,19 @@ NewInitLoop:
         RTS
 
 ; ----------------------------------------------------------------------------
-; Post-init draw for the new row (dim state). Replaces the original
-; "JSR $8975" fade-in call at $80EB41 (same size). Calls the fade-in
-; first, then draws the label+value pair.
+; D-TAP initial draw / menu fade-in hook. Replaces the original
+; "JSR $8975" fade-in call at $80EB41.
+;
+; Reads the saved D-TAP setting, draws the D-TAP row in its normal
+; dim/unselected state, then invokes the game's Option Mode fade-in routine.
+; The row is therefore present together with the other menu entries during
+; the opening fade.
 ; ----------------------------------------------------------------------------
 DTapInitHook:
-        JSR $8975
         JSL ReadDTapFlag
         LDX.b #0
         JSR DrawDTapState
+        JSR $8975
         RTS
 
 ; ============================================================================
@@ -357,24 +368,76 @@ ReadDTapFlag:
 ;
 ;  The SA-1 patch's gate at $81FF60 only proceeds when I-RAM $3348 or
 ;  $3208 is non-zero. This routine adds the option flag as a third
-;  OR-condition. On success it continues into the original tail at
-;  $81FF6B; on failure it returns via a one-byte RTS stub that lives
-;  inside bank $81 so the program bank is restored correctly.
+;  OR-condition, then (when the detector is allowed to run) implements
+;  Mega Man X2's two-stage dash commit:
+;
+;    QuickGate  -- states $00/$02/$04/$0A, then JSL $8499AF
+;                  success -> original ground-dash tail at $81975A
+;    StateGate  -- Leg Parts + airborne states $06/$08 (Air Dash patch)
+;                  success -> face tapped direction, enter state $48
+;                  (the Air Dash handler at $AFFBCE)
+;    else       -> original 12-frame timer at $819766
+;
+;  The Air Dash attempt is skipped if $81976D is not a JSL (i.e. the
+;  Air Dash patch was not applied), so this file can still be used on
+;  an SA-1-only ROM: midair double-tap then just ticks the timer.
+;
+;  On D-TAP OFF it returns via a one-byte RTS stub that lives inside
+;  bank $81 so the program bank is restored correctly.
 ; ============================================================================
 NewGateCheck:
         LDA $3348
-        BNE .proceed
+        BNE .on
         LDA $3208
-        BNE .proceed
+        BNE .on
         JSL ReadDTapFlag
         BEQ .fail
-.proceed:
-        JML $81FF6B
+.on:
+        LDA $02
+        BEQ .gcheck
+        CMP #$02
+        BEQ .gcheck
+        CMP #$04
+        BEQ .gcheck
+        CMP #$0A
+        BNE .try_air
+.gcheck:
+        JSL $8499AF
+        BCS .try_air
+        LDA #$00
+        JML $81975A                 ; Z set: original ground-dash commit
+.try_air:
+        LDA.l $81976D               ; $22 = JSL, written by the Air Dash patch
+        CMP #$22
+        BNE .timer
+        JSL $AFFB8A                 ; CanStartDash_StateGate
+        BNE .timer
+        ; Face the tapped direction (same helper as vanilla $819576 / X2 $88B96A)
+        LDA $37
+        BIT #$02
+        BEQ .not_left
+        STZ $69
+        BRA .faced
+.not_left:
+        BIT #$01
+        BEQ .faced
+        LDA #$40
+        STA $69
+.faced:
+        LDA #$40
+        TRB $7E                     ; vanilla / X2 double-tap clears this bit
+        SEP #$30
+        LDA #$48                    ; Air Dash state (X2 uses $54 for the same)
+        STA $02
+        STZ $03
+        JML $81FF6A                 ; RTS back to the detector's caller
+.timer:
+        JML $819766                 ; DEC $51 / timeout the double-tap window
 .fail:
         JML $81FF6A
 
 ; Replace the SA-1 gate body; last byte of the original 11-byte region
-; becomes the RTS stub used by the fail path.
+; becomes the RTS stub used by the fail / air-dash-success paths.
 org $81FF60
         JML NewGateCheck
         padbyte $EA
@@ -387,8 +450,9 @@ org $81FF60
 ; With the edits above in place, the ROM's contents change; the header's
 ; checksum and checksum-complement bytes are patched so cartridge-checksum
 ; validators (and picky emulators/flash carts) still report a valid ROM.
+; Layout is the official one: complement at $80FFDC, checksum at $80FFDE.
 org $80FFDC
-        db $A5, $EC, $5A, $13                                                 ; 80FFDC
+        db $C7, $E4, $38, $1B                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch
