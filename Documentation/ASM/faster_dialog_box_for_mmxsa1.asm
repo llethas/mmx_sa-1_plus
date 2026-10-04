@@ -1,6 +1,6 @@
 ; ============================================================================
 ;  Mega Man X (SNES, USA, rev 1.0) -- "Faster Dialog Box" Patch
-;  Apply after: SA-1, Air Dash
+;  Apply after: SA-1, Better Walljump
 ; ============================================================================
 ;
 ;  ASSEMBLER
@@ -227,8 +227,10 @@ ScrollSpeedOverride:
 ; With the edits above in place, the ROM's contents change; the header's
 ; checksum and checksum-complement bytes are patched so cartridge-checksum
 ; validators (and picky emulators/flash carts) still report a valid ROM.
+; The value is for the patch order given in "Apply after:"; every patch in
+; the set carries its own, so the ROM is valid after each step.
 org $80FFDC
-        db $2F, $A9, $D0, $56                                                 ; 80FFDC
+        db $58, $13, $A7, $EC                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch

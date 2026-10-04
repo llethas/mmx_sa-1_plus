@@ -1,18 +1,20 @@
 SA-1 Plus merges 3 previously incompatible patches and implements a couple new ones. It gives the vanilla game many QoL improvements to make it feel like Mega Man X2 onwards. Complete list of changes:
 
   - Removes in-game slowdowns
-  - Passwords and Control Scheme are saved into SRAM
-  - Sub-Tanks stop depleting at full health
-  - Dash defaulted to L button
-  - Double-tap Dash toggle in the options menu (OFF by default), also saved into SRAM
-  - Dash available from the start
-  - Leg Capsule now gives Air Dash (like Mega Man X2)
+  - Adds SRAM saving for in-game passwords, control scheme, and option toggles
+  - Implements the EXTRA OPTIONS menu with the following toggles:
+      - D-TAP DASH (OFF by default, toggles double-tap dash)
+      - EARLY DASH (ON by default, makes dash available from the start, without the Leg Armor)
+      - AIRDASH (ON by default, makes airdash available when you have the Leg Armor, like Mega Man X2)
+      - BETTER SUB-TANK (ON by default, stops sub-tanks from depleting once health is full)
   - Walljump further while holding the Dash button (like Mega Man X2 onwards), instead of timing Jump+Dash
   - Hadouken Capsule now appears in the 1st run instead of the 5th (the other requirements remain the same)
   - Hadouken can hit during i-frames (because sometimes the game shoots one Normal Buster pellet alongside the Hadouken)
   - Hadouken can hit Wolf Sigma (final boss' final form)
+  - Exiting OPTION MODE now goes back directly to the main menu, instead of restarting the intro
+  - Assigns dash to L by default
   - Dialog boxes open, close and scroll faster
-  - Skips the boss intro by pressing START
+  - Pressing START skips the boss intro
 
 Apply "sa-1_plus.ips" to your 1.0 USA ROM.
 

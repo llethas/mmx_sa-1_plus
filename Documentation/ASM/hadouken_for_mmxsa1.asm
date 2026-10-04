@@ -1,7 +1,7 @@
 ; ============================================================================
 ;  Mega Man X (SNES, USA, rev 1.0) -- "Hadouken" Patch
-;  Apply after: SA-1, Air Dash, Faster Dialog Box, Skip Boss Intro,
-;  D-TAP DASH Toggle
+;  Apply after: SA-1, Better Walljump, Faster Dialog Box, Skip Boss Intro,
+;               Extra Options, Option Mode Exit To Menu
 ; ============================================================================
 ;
 ;  ASSEMBLER
@@ -179,12 +179,15 @@ BossAIList:
 BossAIListEnd:
 
 ; ----------------------------------------------------------------------------
-; Bank $80 -- SNES header checksum
+; Bank $80 -- SNES header checksum fix
 ; ----------------------------------------------------------------------------
-; This patch's shipped IPS does not modify the header checksum bytes at
-; $80FFDC-$80FFDF; the value left behind by the previous patch in the chain
-; (D-TAP DASH Toggle) is carried through unchanged. No write is needed here
-; -- building with --fix-checksum=off keeps it that way.
+; With the edits above in place, the ROM's contents change; the header's
+; checksum and checksum-complement bytes are patched so cartridge-checksum
+; validators (and picky emulators/flash carts) still report a valid ROM.
+; The value is for the patch order given in "Apply after:"; every patch in
+; the set carries its own, so the ROM is valid after each step.
+org $80FFDC
+        db $30, $08, $CF, $F7                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch
