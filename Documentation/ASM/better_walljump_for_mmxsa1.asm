@@ -1,6 +1,6 @@
 ; ============================================================================
 ;  Mega Man X (SNES, USA, rev 1.0) -- "Better Walljump" Patch
-;  Apply after: SA-1
+;  Apply after: SA-1, Ride Armor Fix
 ; ============================================================================
 ;
 ;  ASSEMBLER
@@ -84,7 +84,7 @@ Walljump_PushOffSpeed:
 ; The value is for the patch order given in "Apply after:"; every patch in
 ; the set carries its own, so the ROM is valid after each step.
 org $80FFDC
-        db $A7, $B6, $58, $49                                                 ; 80FFDC
+        db $47, $B6, $B8, $49                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch

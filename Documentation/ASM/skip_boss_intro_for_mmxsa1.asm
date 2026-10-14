@@ -1,6 +1,6 @@
 ; ============================================================================
 ;  Mega Man X (SNES, USA, rev 1.0) -- "Skip Boss Intro" Patch
-;  Apply after: SA-1, Better Walljump, Faster Dialog Box
+;  Apply after: SA-1, Ride Armor Fix, Better Walljump, Better Dialog Box
 ; ============================================================================
 ;
 ;  ASSEMBLER
@@ -241,7 +241,7 @@ assert pc() <= $80FFA0            ; $80FFA4+ holds the SA-1 JML stubs
 ; The value is for the patch order given in "Apply after:"; every patch in
 ; the set carries its own, so the ROM is valid after each step.
 org $80FFDC
-        db $6C, $5F, $93, $A0                                                 ; 80FFDC
+        db $52, $7A, $AD, $85                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch

@@ -1,6 +1,6 @@
 ; ============================================================================
 ;  Mega Man X (SNES, USA, rev 1.0) -- "Hadouken" Patch
-;  Apply after: SA-1, Better Walljump, Faster Dialog Box, Skip Boss Intro,
+;  Apply after: SA-1, Ride Armor Fix, Better Walljump, Better Dialog Box, Skip Boss Intro,
 ;               Extra Options, Option Mode Exit To Menu
 ; ============================================================================
 ;
@@ -187,7 +187,7 @@ BossAIListEnd:
 ; The value is for the patch order given in "Apply after:"; every patch in
 ; the set carries its own, so the ROM is valid after each step.
 org $80FFDC
-        db $30, $08, $CF, $F7                                                 ; 80FFDC
+        db $16, $23, $E9, $DC                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch

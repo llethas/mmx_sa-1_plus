@@ -1,6 +1,6 @@
 ; ============================================================================
 ;  Mega Man X (SNES, USA, rev 1.0) -- "Option Mode Exit To Menu" Patch
-;  Apply after: SA-1, Extra Options (required)
+;  Apply after: SA-1, Ride Armor Fix, Extra Options (required)
 ; ============================================================================
 ;
 ;  ASSEMBLER
@@ -88,7 +88,7 @@ assert pc() <= $80FFA0
 ; The value is for the patch order given in "Apply after:"; every patch in
 ; the set carries its own, so the ROM is valid after each step.
 org $80FFDC
-        db $5A, $D5, $A5, $2A                                                 ; 80FFDC
+        db $40, $F0, $BF, $0F                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch

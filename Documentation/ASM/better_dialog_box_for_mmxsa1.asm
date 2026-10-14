@@ -1,6 +1,6 @@
 ; ============================================================================
-;  Mega Man X (SNES, USA, rev 1.0) -- "Faster Dialog Box" Patch
-;  Apply after: SA-1, Better Walljump
+;  Mega Man X (SNES, USA, rev 1.0) -- "Better Dialog Box" Patch
+;  Apply after: SA-1, Ride Armor Fix, Better Walljump
 ; ============================================================================
 ;
 ;  ASSEMBLER
@@ -8,7 +8,7 @@
 ;    Build with checksum-fixing disabled so the result matches the shipped
 ;    IPS byte-for-byte:
 ;
-;        asar --fix-checksum=off faster_dialog_box_for_mmxsa1.asm rom.sfc
+;        asar --fix-checksum=off better_dialog_box_for_mmxsa1.asm rom.sfc
 ;
 ;  WHAT IT DOES
 ;    Speeds up the two animations that play out on a dialog box:
@@ -18,6 +18,16 @@
 ;
 ;    These are two separate, unrelated pieces of game code, documented in
 ;    their own sections below.
+;
+;    A third part changes how the "next page" wait behaves while a button
+;    is held (see PART 3):
+;
+;      - Holding Y / B (or any other non-START button) still speeds the text
+;        up, but when a page is complete the box now WAITS FOR A NEW BUTTON
+;        PRESS before scrolling to the next page, exactly like when no
+;        button is held at all.
+;      - Holding START is unchanged: it is even faster and it keeps
+;        scrolling to the next page automatically.
 ; ============================================================================
 
 lorom
@@ -221,6 +231,102 @@ ScrollSpeedOverride:
         STA $3334
         RTL
 
+
+; ############################################################################
+; # PART 3 - "Wait for button" at the end of a text page: press, not hold
+; ############################################################################
+;
+; Dialog text is printed by a task whose control-code handlers live in bank
+; $80 (jump table at $80:E872, one entry per control code). Code $01 is the
+; "page finished, wait for the player" handler at $80:E8B8:
+;
+;   E8B8  INC $333D             ; "waiting for button" flag
+;   E8BB  JSR $8100             ; yield one frame
+;   E8BE  JSR $EA89             ; A = (held $6BDE | held $6BDF) & $F0
+;   E8C1  BNE $E8D7             ; any such button held -> leave the wait
+;   E8C3  ...                   ; blink the arrow, yield, loop to E8BE
+;   E8D7  STZ $333D / erase arrow / back to the text loop ($80:E7A3)
+;
+; The test is on HELD buttons, so a button that is still held when the page
+; ends (nothing but the speed-up held down) leaves the wait immediately and
+; the next page scrolls in by itself.
+;
+; Button words (SA-1 port, game buttons after the control-scheme remap done
+; by $80:E5FD; they are NOT the raw joypad bits). All are 16-bit words:
+;
+;   $6BDE/$6BDF  buttons HELD this frame
+;                  $6BDE: bit7 Dash  bit5 Weapon L  bit4 Weapon R
+;                  $6BDF: bit7 Jump  bit6 Shot      bit4 START/menu
+;                         (bits 3-0 = D-pad)
+;   $6BE0/$6BE1  buttons HELD LAST frame (copy of $6BDE/F taken at the very
+;                start of $80:E5FD, before the new state is read)
+;   $6BE2/$6BE3  buttons NEWLY PRESSED = held & ~held-last, computed at the
+;                end of $80:E5FD ($80:E62B-E634)
+;
+; Default scheme: Shot = Y, Jump = B, Dash = L, START = START. $F0 is the
+; set of buttons the vanilla "any button" test uses; the same mask is kept
+; here, so the exact same buttons that used to continue the dialog still do.
+;
+; WHY NOT JUST READ $6BE2/$6BE3?  (the Fire Wave bug)
+;   The game itself writes to $6BE3. While Fire Wave is the selected weapon
+;   the player code fakes a "Shot newly pressed" bit ($40) into $6BE3 on
+;   alternate frames whenever Shot is held (rapid fire). A box that opened
+;   while the player was firing Fire Wave therefore saw a "fresh press" every
+;   other frame and skipped every page for Y (B was unaffected). The held
+;   words ($6BDE/F) and the held-last words ($6BE0/1) are not touched by that
+;   code, so the edge is computed here from those two, exactly like the game's
+;   own routine at $80:E62B does, but without going through the polluted
+;   $6BE2/$6BE3. (Same approach as the Mega Man X2 patch, where the same
+;   thing happens with Bubble Splash.)
+;
+; New rule at the wait:
+;   - START ($6BDF bit 4) held    -> leave the wait (as before: START keeps
+;                                    auto-scrolling, nothing changes)
+;   - otherwise, a $F0 button newly pressed this frame, i.e.
+;       held & ~held-last & $F0F0 -> leave the wait
+;   - otherwise                   -> keep waiting (arrow keeps blinking)
+;
+; The 5 bytes "JSR $EA89 / BNE $E8D7" at $80:E8BE are replaced by
+; "JML WaitForPress / NOP"; WaitForPress jumps back to $80:E8D7 (leave) or
+; $80:E8C3 (keep waiting), the two places the original BNE could go to.
+; A/X/Y are 8-bit there and DB is unchanged by JML, so the absolute accesses
+; to $6BDE-$6BE0 behave exactly like the ones in $80:EA89. A is switched to
+; 16 bits for the edge test and back (SEP keeps the Z flag); X/Y and RAM are
+; not touched. $80:EA89 itself is untouched: it is still used by the speed-up
+; logic (wait between characters 1 frame instead of $6F) and by the
+; timed-pause code.
+; ----------------------------------------------------------------------------
+
+; Hijack point (bank $80) - replace "JSR $EA89 / BNE $E8D7" (5 bytes)
+assert read1($80E8BE) == $20 && read1($80E8BF) == $89 && read1($80E8C0) == $EA   ; JSR $EA89
+assert read1($80E8C1) == $D0 && read1($80E8C2) == $14                            ; BNE $E8D7
+assert read1($80E8C3) == $AD && read1($80E8D7) == $9C                            ; branch targets
+assert read1($AFFEA0) == $FF && read1($AFFEDF) == $FF                            ; free space
+org $80E8BE
+        JML WaitForPress
+        NOP
+
+; ----------------------------------------------------------------------------
+; WaitForPress
+;   Out: JMP $80:E8D7 (leave the wait) or JMP $80:E8C3 (keep waiting).
+; ----------------------------------------------------------------------------
+org $AFFEA0
+WaitForPress:
+        LDA $6BDF
+        AND #$10                  ; START held?
+        BNE .leave                ; yes: unchanged behaviour (auto-advance)
+        REP #$20
+        LDA $6BE0                 ; buttons held last frame
+        EOR #$FFFF                ; ... not held last frame
+        AND $6BDE                 ; ... and held now = newly pressed
+        AND #$F0F0                ; same buttons as the vanilla $EA89 test
+        SEP #$20                  ; (SEP keeps Z)
+        BNE .leave
+        JML $80E8C3               ; nothing new pressed: keep waiting
+.leave
+        JML $80E8D7
+assert pc() <= $AFFEE0
+
 ; ----------------------------------------------------------------------------
 ; Bank $80 -- SNES header checksum fix
 ; ----------------------------------------------------------------------------
@@ -230,7 +336,7 @@ ScrollSpeedOverride:
 ; The value is for the patch order given in "Apply after:"; every patch in
 ; the set carries its own, so the ROM is valid after each step.
 org $80FFDC
-        db $58, $13, $A7, $EC                                                 ; 80FFDC
+        db $3E, $2E, $C1, $D1                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch

@@ -2,15 +2,18 @@ AI was used to assist in the creation of this project.
 
 Patch order:
 
-  1. mmxsa1_double_tap_disabled
-  2. better_walljump_for_mmxsa1
-  3. faster_dialog_box_for_mmxsa1
-  4. skip_boss_intro_for_mmxsa1
-  5. extra_options_for_mmxsa1
-  6. option_mode_exit_to_menu_for_mmxsa1
-  7. hadouken_for_mmxsa1
+  1. mmxsa1_double_tap_disabled 
+  2. chameleon_sting_ride_armor_fix_for_mmxsa1
+  3. better_walljump_for_mmxsa1
+  4. better_dialog_box_for_mmxsa1
+  5. skip_boss_intro_for_mmxsa1
+  6. extra_options_for_mmxsa1
+  7. option_mode_exit_to_menu_for_mmxsa1
+  8. hadouken_for_mmxsa1
+  9. password_exit_to_menu_for_mmxsa1
+ 10. relocalization_compat_for_mmxsa1
 
-"sa-1_plus.ips" contains all of the patches merged into one. You can pick and choose which patches to apply, however, mmxsa1_double_tap_disabled is required for all of them, and if you're applying the option_mode_exit_to_menu_for_mmxsa1 patch, it requires extra_options_for_mmxsa1 to be applied beforehand.
+"sa-1_plus.ips" contains all of the patches merged into one. Some of the patches require a previous patch to work, but not all of them.
 
 
 Individual changes breakdown:
@@ -22,11 +25,15 @@ Individual changes breakdown:
       - Sub-Tanks stop depleting at full health (though it's later made a toggle with the patch "extra_options_for_mmxsa1")
       - Double-Tap Dash disabled (though it's later made a toggle with the patch "extra_options_for_mmxsa1")
 
+  chameleon_sting_ride_armor_fix_for_mmxsa1.ips:
+      Fixed a bug in the original SA-1 patch, where if you entered a Ride Armor while invincible (using the C.STING charged shot), then got hit, the game would softlock
+
   better_walljump_for_mmxsa1.ips:
       - Walljump further while holding the Dash button (like Mega Man X2 onwards), instead of timing Jump+Dash
 
-  faster_dialog_box_for_mmxsa1.ips:
+  better_dialog_box_for_mmxsa1.ips:
       - Dialog boxes open, close and scroll faster
+      - Holding Y or B no longer auto-skips the dialog box (holding START still does), so you can speed up the text without accidentally skipping it
 
   skip_boss_intro_for_mmxsa1.ips:
       - Pressing START skips the boss intro
@@ -45,6 +52,13 @@ Individual changes breakdown:
       - Hadouken Capsule now appears in the 1st run instead of the 5th (the other requirements remain the same)
       - Hadouken can hit during i-frames (because sometimes the game shoots one Normal Buster pellet alongside the Hadouken)
       - Hadouken can hit Wolf Sigma (final boss' final form)
+
+  password_exit_to_menu_for_mmxsa1.ips:
+      - Implements an EXIT button in the PASS WORD screen, so you can go back to the main menu from there
+      - Renames the "END" button at the PASS WORD screen to "START" (like Mega Man X2)
+
+  relocalization_compat_for_mmxsa1.ips:
+      - Makes the mmxsa1_double_tap_disabled patch compatible with the Relocalization patches
 
 
 See the .asm files for more information about each patch.

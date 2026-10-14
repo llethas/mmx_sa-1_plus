@@ -1,6 +1,6 @@
 ; ============================================================================
 ;  Mega Man X (SNES, USA, rev 1.0) -- "Extra Options" Patch
-;  Apply after: SA-1, Better Walljump, Faster Dialog Box, Skip Boss Intro
+;  Apply after: SA-1, Ride Armor Fix, Better Walljump, Better Dialog Box, Skip Boss Intro
 ; ============================================================================
 ;
 ;  ASSEMBLER
@@ -1649,7 +1649,7 @@ org $81FF60
 ; The value is for the patch order given in "Apply after:"; every patch in
 ; the set carries its own, so the ROM is valid after each step.
 org $80FFDC
-        db $23, $D2, $DC, $2D                                                 ; 80FFDC
+        db $09, $ED, $F6, $12                                                 ; 80FFDC
 
 ; ============================================================================
 ; End of patch
